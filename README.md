@@ -1,5 +1,5 @@
 Modelcap is a [Nix](http://nixos.org/nix) like library for lightweight
-state-tracking in Python (but extremely lightweight).
+state-tracking in Python, but extremely lightweight.
 
 Modelcap
 --------
