@@ -1,0 +1,6 @@
+result
+.*
+*pyc
+_*/
+tags
+*\.log
