@@ -14,7 +14,7 @@ Features:
   - _Model_, for moving the state across its lifecycle from creation to
     sealing into the storage.
 * For Models, there are methods to keep record of non-determenistic state
-  modifications via JSON-serializable abstractions called _Program_s.
+  modifications via JSON-serializable abstractions called _Program_ s.
 * There is a collection of functions for search and dependency-tracking.
 * Mypy-based typing
 * No extra ependencies
