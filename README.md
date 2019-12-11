@@ -7,15 +7,15 @@ Modelcap
 Features:
 
 * Modelcap is a tool for tracking immutable application-defined states in Python
+* States reside in a storage which is a pre-defined folder in a filesystem.
 * Basic (and currently the only) base classes are:
-  - _Config_, which represents JSON-serializable configuration. Configuration
-    may contain references to other states in storage.
+  - _Config_, which represents JSON-serializable configuration. Configurations
+    may contain references to other states in the storage.
   - _Model_, for moving the state across its lifecycle from creation to
     sealing into the storage.
 * For Models, there are methods to keep record of non-determenistic state
   modifications via JSON-serializable abstractions called _Program_s.
-* A small collection of functions for search and tracking dependencies does
-  exist.
+* There is a collection of functions for search and dependency-tracking.
 * Mypy-based typing
 * No extra ependencies
 * <1K lines of code
