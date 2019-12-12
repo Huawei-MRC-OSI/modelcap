@@ -19,6 +19,7 @@ Ref=str
 RefPath=List[str]
 WHash=str
 Hash=str
+Protocol=List[Tuple[str,WHash,Any]]
 
 
 #  _   _ _   _ _
@@ -311,7 +312,7 @@ class Model:
     self.timeprefix:str = timestring() if timeprefix is None else timeprefix
     self.config:Config = config
     self.program:Program = Program([])
-    self.protocol:List[Tuple[str,WHash,Any]] = []
+    self.protocol:Protocol = []
     self.outdir:str=f'{self.timeprefix}_{config_hash(config)[:8]}'
     self.storedir:Optional[str]=None
 
@@ -332,11 +333,6 @@ def model_storepath(m:Model)->str:
   assert m.storedir is not None, \
       "Looks like this model is not saved yet and thus it's `storepath` is undefined"
   return MODELCAP_STORE+'/'+m.storedir
-
-# def model_metricspath(m:Model, evpath:str=MODELCAP_STORE_EVENTS)->str:
-#   path=evpath+f'/{m.timeprefix}/metrics'
-#   makedirs(path, exist_ok=True)
-#   return path
 
 def model_config(m:Model)->Config:
   return m.config
