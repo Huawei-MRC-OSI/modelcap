@@ -288,15 +288,15 @@ class Model:
   Lifecycle of a model starts from its creation from JSON-serializable
   `Config`.
 
-  After the model is created, users typically perform non-detemenistic
+  After the model is created, users typically perform non-determenistic
   operations on it. To make the model abstraction aware of them, users have to
-  update model's state, consisting of `config` and `program` fields, together
-  with the `protocol` field.  The separation of state into `config` and
-  `program` is not strictly important, but we hope it help to build a more
-  user-friendly search system. We encourage to keep config immutable after it
-  was passed to model, and use `program` to track changes.  During operations,
-  users are welcome to save various processing artifacts into temporary folder
-  as returned by `model_outpath(m)` function.
+  update the _state_ of the model, which is a combination of `config`, `program`
+  and `protocol` field.  The separation of state into `config` and `program` is
+  not strictly important, but we hope it will help us to build a more
+  user-friendly search system. We encourage users to keep config immutable after
+  it was passed to model, and use `program` to track changes.  During
+  operations, users are welcome to save various processing artifacts into
+  temporary folder as returned by `model_outpath(m)` function.
 
   Note, that the rational behind `protocol` is unclear, maybe it should be
   moved into userland code completely.
@@ -460,5 +460,4 @@ def only(refs:List[Ref])->Ref:
          f"of them:\n{refs}\n. Probably you need a more clever filter to make "
          f"a right choice")
   return refs[0]
-
 
