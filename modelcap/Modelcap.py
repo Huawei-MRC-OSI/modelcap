@@ -61,12 +61,15 @@ def forcelink(src,dst,**kwargs):
 def dhash(path:str)->str:
   """ Calculate recursive MD5 hash of a directory.
   FIXME: stop ignoring file/directory names
+  Don't count files starting from underscope ('_')
   """
   assert isdir(path), f"dhash(path) expects a directory, but '{path}' is not"
   def _iter():
     for root, dirs, filenames in walk(abspath(path), topdown=True):
       for filename in filenames:
-        yield abspath(join(root, filename))
+        assert len(filename)>0, "Bug: unexpected empty filename"
+        if filename[0] != '_':
+          yield abspath(join(root, filename))
 
   e=md5()
   nfiles=0
@@ -264,6 +267,8 @@ def config_deref(ref:Ref)->Config:
 def config_deref_ro(ref:Ref)->Any:
   return config_ro(Config(store_readjson([ref, 'config.json'])))
 
+store_config_ro = config_deref_ro
+
 def program_deref(ref:Ref)->Program:
   return Program(store_readjson([ref, 'program.json']))
 
@@ -273,6 +278,24 @@ def store_deps(ref:Ref)->List[Ref]:
   c=config_deref(ref)
   p=program_deref(ref)
   return state_deps((c,p))
+
+def store_link(ref:Ref, tgtpath:str, name:str, withtime=True)->None:
+  """ Puts a link pointing to storage node into user-specified directory
+  `tgtpath` """
+  assert_valid_ref(ref)
+  assert isdir(tgtpath), f"store_link(): `tgt` dir '{tgtpath}' doesn't exist"
+  ts:Optional[str]
+  if withtime:
+    tspath=store_systempath([ref,'_timestamp_.txt'])
+    if isfile(tspath):
+      ts=open(tspath,'r').read()
+    else:
+      print(f"Warning: no timestamp for {ref}, probably because of old version of Modelcap")
+      ts=None
+  else:
+    ts=None
+  timeprefix=f'{ts}_' if ts is not None else ''
+  forcelink(relpath(store_systempath([ref]), tgtpath), join(tgtpath,f'{timeprefix}{name}'))
 
 
 #  __  __           _      _
@@ -402,6 +425,8 @@ def model_save(m:Model)->Ref:
     json.dump(m.program.ops, f, indent=4)
   with open(o+'/protocol.json', 'w') as f:
     json.dump(m.protocol, f, indent=4)
+  with open(o+'/_timestamp_.txt', 'w') as f:
+    f.write(str(m.timeprefix))
 
   ho=dhash(o)
   storedir=config_dict(c).get('name','unnamed')+'-'+ho
