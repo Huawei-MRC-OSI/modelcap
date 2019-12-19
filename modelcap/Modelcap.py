@@ -12,6 +12,7 @@ from typing import Optional, Any, List, Tuple, Union
 MODELCAP_ROOT:str = environ.get('MODELCAP_ROOT', join(environ.get('HOME','/var/run'),'_modelcap'))
 MODELCAP_LOGDIR:str = environ.get('MODELCAP_LOGDIR', join(MODELCAP_ROOT,'log'))
 MODELCAP_TMP:str = environ.get('MODELCAP_TMP', join(MODELCAP_ROOT,'tmp'))
+# TODO: Rename 'store' to 'store-v1' and track versions
 MODELCAP_STORE:str = join(MODELCAP_ROOT,'store')
 
 
@@ -37,24 +38,25 @@ def logdir(tag:str="",logrootdir:str=MODELCAP_LOGDIR):
 def mklogdir(tag:str="", subdirs:list=[], logrootdir:str=MODELCAP_LOGDIR, symlinks:bool=True):
   """ Creates `<logrootdir>/<tag>_<time>` folder and  `<logrootdir>/_<tag>_latest` symlink to
   it. """
-  dirname=logdir(tag,logrootdir=logrootdir)
-  mkdir(dirname)
+  logpath=logdir(tag,logrootdir=logrootdir)
+  makedirs(logpath, exist_ok=True)
   if symlinks:
     linkname=logrootdir+'/'+(('_'+str(tag)+'_latest') if len(tag)>0 else '_latest')
     try:
-      symlink(basename(dirname),linkname)
+      symlink(basename(logpath),linkname)
     except OSError as e:
       if e.errno == EEXIST:
         remove(linkname)
-        symlink(basename(dirname),linkname)
+        symlink(basename(logpath),linkname)
       else:
         raise e
   for sd in subdirs:
-    mkdir(dirname+'/'+sd)
-  return dirname
+    mkdir(logpath+'/'+sd)
+  return logpath
 
 def forcelink(src,dst,**kwargs):
   """ Create a `dst` symlink poinitnig to `src`. Overwrites existing files, if any """
+  makedirs(dirname(dst),exist_ok=True)
   symlink(src,dst+'__',**kwargs)
   replace(dst+'__',dst)
 
@@ -83,9 +85,6 @@ def dhash(path:str)->str:
 
   return e.hexdigest()
 
-
-def _ref2sys(ref:Ref)->str:
-  return store_systempath(store_refpath(ref))
 
 def _scanref_list(l):
   assert isinstance(l,list)
@@ -456,6 +455,7 @@ def model_save(m:Model)->Ref:
 def search_(chash:Hash, phash:Hash, storepath:str=MODELCAP_STORE)->List[Ref]:
   """ Return references matching the hashes of config and program """
   matched=[]
+  makedirs(storepath, exist_ok=True)
   for dirname in sorted(listdir(storepath)):
     ref='ref:'+dirname
     c=config_deref(ref)
