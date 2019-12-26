@@ -277,11 +277,26 @@ def program_deref(ref:Ref)->Program:
   return Program(store_readjson([ref, 'program.json']))
 
 def store_deps(ref:Ref)->List[Ref]:
-  """ Return storage reference's dependencies, that is all the other references
+  """ Return a list of reference's dependencies, that is all the other references
   found in current ref's config and program """
   c=config_deref(ref)
   p=program_deref(ref)
   return state_deps((c,p))
+
+
+def store_deepdeps(roots:List[Ref])->List[Ref]:
+  """ Return an exhaustive list of dependencies for the `roots` references.
+  References themselves are also included """
+  frontier=set(roots)
+  processed=set()
+  while frontier:
+    ref = frontier.get() #FIXME
+    processed.add(ref)
+    for dep in store_deps(ref):
+      if not dep in processed:
+        frontier.add(dep)
+  return list(processed)
+
 
 def store_link(ref:Ref, tgtpath:str, name:str, withtime=True)->None:
   """ Puts a link pointing to storage node into user-specified directory
@@ -300,6 +315,35 @@ def store_link(ref:Ref, tgtpath:str, name:str, withtime=True)->None:
     ts=None
   timeprefix=f'{ts}_' if ts is not None else ''
   forcelink(relpath(store_systempath([ref]), tgtpath), join(tgtpath,f'{timeprefix}{name}'))
+
+# def store_gc(roots:List[Ref], dry_run:bool=True, storepath:str=MODELCAP_STORE)->List[Ref]:
+#   """ Return references matching the hashes of config and program """
+#   makedirs(storepath, exist_ok=True)
+
+#   processed=set()
+#   frontier=set(roots)
+#   while frontier:
+#     ref = frontier.get()
+#     processed.add(ref)
+#     for dep in store_deps(ref):
+#       if not dep in processed:
+#         frontier.add(dep)
+#   roots_with_deps=set(processed)
+
+#   to_delete=[]
+#   for dirname in sorted(listdir(storepath)):
+#     ref='ref:'+dirname
+#     if not ref in roots_with_deps:
+#       to_delete.append(ref)
+
+#   for ref in to_delete:
+#     if dty_run:
+#       print(f'Will remove {ref}')
+#     else
+#       print(f'Removing {ref}')
+#       rmdir(store_systempath(ref))
+
+#   return []
 
 
 #  __  __           _      _
