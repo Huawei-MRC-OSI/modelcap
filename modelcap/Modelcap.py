@@ -115,14 +115,14 @@ def dicthash(d:dict)->Hash:
   return md5(string.encode('utf-8')).hexdigest()
 
 def assert_serializable(d:Any, argname:str)->Any:
-  error_msg=(f"Content of this '{argname}' of type {type(d)} is not serializable!"
+  error_msg=(f"Content of this '{argname}' of type {type(d)} is not JSON-serializable!"
              f"\n\n{d}\n\n"
-             f"Make sure that `json.dumps`/`json.loads` work and doesn't"
-             f"change it. Typically, we want to use only simple Python types"
+             f"Make sure that `json.dumps`/`json.loads` work on it and are able "
+             f"to preserve the value. Typically, we want to use only simple Python types"
              f"like lists, dicts, strings, ints, etc. In particular,"
              f"overloaded floats like `np.float32` don't work. Also, we"
-             f"don't use Python tuples, because they don't survive the JSON"
-             f"serialization")
+             f"don't use Python tuples, because they default JSON implementation convert "
+             f"them to lists")
   s=json.dumps(d)
   assert s is not None, error_msg
   d2=json.loads(s)
@@ -179,11 +179,16 @@ class Config:
   """ Config is a JSON-serializable configuration object. It should match the
   requirements of `assert_valid_config`. Tupically, it's __dict__ should
   contain only either simple Python types (strings, bool, ints, floats), lists
-  or dicts. No tuples, no `np.float32`, no functions. Note that fields with
-  names starting from '_' are allowed but they don't preserved during
-  serialization."""
+  or dicts. No tuples, no `np.float32`, no functions. Fields with names
+  starting from '_' are may be added after construction, but they are not
+  preserved during the serialization."""
   def __init__(self, d:dict):
     assert_valid_dict(d,'dict')
+    uf=[x for x in d if len(x)>0 and x[0]=='_']
+    assert len(uf)==0, \
+        (f"Config shouldn't initially contain fields starting with "
+         f"underscopes '_'. Such filed should be added explicitly, "
+         f"if needed. Got {uf}.")
     self.__dict__=deepcopy(d)
 
 def assert_valid_config(c:Config):
