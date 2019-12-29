@@ -6,6 +6,8 @@ from os import mkdir, makedirs, replace, listdir, rmdir, environ, symlink, \
 from os.path import basename, join, isfile, isdir, islink, relpath, abspath
 from hashlib import md5
 from copy import deepcopy
+from tempfile import mkdtemp
+from shutil import rmtree
 from typing import Optional, Any, List, Tuple, Union
 
 
@@ -248,6 +250,15 @@ def assert_valid_refpath(refpath):
   assert len(refpath)>0, error_msg
   assert_valid_ref(refpath[0]), error_msg
 
+
+def assert_store_initialized()->None:
+  assert isdir(MODELCAP_STORE), (f"Looks like the Modelcap store ('{MODELCAP_STORE}') is not initialized. Did "
+                                 f"you call `store_initialize`?")
+
+def store_initialize(exist_ok:bool=True):
+  makedirs(MODELCAP_STORE,exist_ok=exist_ok)
+  assert_store_initialized()
+
 def store_systempath(refpath:RefPath)->str:
   """ Constructs a Refpath into system-specific path
   TODO: use joins here
@@ -384,7 +395,8 @@ class Model:
     self.config:Config = config
     self.program:Program = Program([])
     self.protocol:Protocol = []
-    self.outdir:str=f'{self.timeprefix}_{config_hash(config)[:8]}'
+    self.outprefix:str=f'{self.timeprefix}_{config_hash(config)[:8]}_'
+    self.outpath:Optional[str]=None
     self.storedir:Optional[str]=None
 
   def get_whash(self)->WHash:
@@ -396,9 +408,9 @@ def model_program(m:Model)->Program:
   return m.program
 
 def model_outpath(m:Model)->str:
-  path=MODELCAP_TMP+'/'+m.outdir
-  makedirs(path, exist_ok=True)
-  return path
+  if m.outpath is None:
+    m.outpath=mkdtemp(prefix=m.outprefix, dir=MODELCAP_TMP)
+  return m.outpath
 
 def model_storepath(m:Model)->str:
   assert m.storedir is not None, \
@@ -454,14 +466,18 @@ def model_save(m:Model)->Ref:
   """ Create new node in the storage. Return reference to newly created storage node.
   Node artifacts should be already prepared in the `model_output` directory.
   This function saves additional metadata and seals the node with hash. Sealed
-  state is marked by assigning non-empty `storedir`. """
+  state is marked by assigning non-empty `storedir`.
+
+  TODO: make atomic """
+  assert_store_initialized()
+
   c = model_config(m)
   p = model_program(m)
   o = model_outpath(m)
 
   oops_message = ("Oops: Attempting to overwrite file %(F)s with builtin"
                   "version. Please don't save files with this name in model's"
-                  "output folder for now.")
+                  "`model_outpath` folder for now.")
 
   assert not isfile(o+'/config.json'), oops_message % {'F':'config.json'}
   assert not isfile(o+'/program.json'), oops_message % {'F':'program.json'}
@@ -478,14 +494,13 @@ def model_save(m:Model)->Ref:
 
   ho=dhash(o)
   storedir=config_dict(c).get('name','unnamed')+'-'+ho
-  storepath=MODELCAP_STORE+'/'+storedir
-  if isdir(storepath):
-    hs=dhash(storepath)
+  nodepath=join(MODELCAP_STORE,storedir)
+  if isdir(nodepath):
+    hs=dhash(nodepath)
     assert ho==hs, f"Oops: {storedir} exists, but have incorrect hash {hs}."
-    rmdir(o)
+    rmtree(o)
   else:
-    makedirs(MODELCAP_STORE, exist_ok=True)
-    replace(o, storepath)
+    replace(o, nodepath)
 
   m.storedir=storedir
   print(m.storedir)
@@ -501,11 +516,10 @@ def model_save(m:Model)->Ref:
 # |____/ \___|\__,_|_|  \___|_| |_|
 
 
-def search_(chash:Hash, phash:Hash, storepath:str=MODELCAP_STORE)->List[Ref]:
+def search_(chash:Hash, phash:Hash)->List[Ref]:
   """ Return references matching the hashes of config and program """
   matched=[]
-  makedirs(storepath, exist_ok=True)
-  for dirname in sorted(listdir(storepath)):
+  for dirname in sorted(listdir(MODELCAP_STORE)):
     ref='ref:'+dirname
     c=config_deref(ref)
     p=program_deref(ref)
@@ -513,10 +527,10 @@ def search_(chash:Hash, phash:Hash, storepath:str=MODELCAP_STORE)->List[Ref]:
       matched.append(ref)
   return matched
 
-def search(cp:State, **kwargs)->List[Ref]:
+def search(cp:State)->List[Ref]:
   """ Return list of references to Store nodes that matches given `State` i.e.
   `Config` and `Program` (in terms of corresponding `*_hash` functions)."""
-  return search_(config_hash(cp[0]), program_hash(cp[1]), **kwargs)
+  return search_(config_hash(cp[0]), program_hash(cp[1]))
 
 def only(refs:List[Ref])->Ref:
   """ Take a list and extract it's single item, or complain loudly """

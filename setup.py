@@ -7,8 +7,8 @@ setuptools.setup(
   name="modelcap",
   version="0.0.1",
   author="grwlf",
-  author_email="mironov.sergey@huawei.com",
-  description="State-tracking package",
+  author_email="grrwlf@gmail.com",
+  description="Nix-like state-tracking package",
   long_description=long_description,
   long_description_content_type="text/markdown",
   url="https://github.com/Huawei-MRC-OSI/modelcap",
@@ -19,5 +19,7 @@ setuptools.setup(
     "Operating System :: OS Independent",
   ],
   python_requires='>=3.6',
+  test_suite='nose.collector',
+  tests_require=['nose', 'hypothesis'],
 )
 
