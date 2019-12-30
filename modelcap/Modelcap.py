@@ -256,6 +256,7 @@ def assert_store_initialized()->None:
                                  f"you call `store_initialize`?")
 
 def store_initialize(exist_ok:bool=True):
+  print(f"Initializing {MODELCAP_STORE}")
   makedirs(MODELCAP_STORE,exist_ok=exist_ok)
   assert_store_initialized()
 
